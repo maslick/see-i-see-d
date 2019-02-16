@@ -1,0 +1,2 @@
+JAVA_MAIN_CLASS=io.maslick.cicd.App
+JAVA_OPTIONS=-Dport=8080
