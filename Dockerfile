@@ -1,4 +1,4 @@
-FROM fabric8/java-jboss-openjdk8-jdk:1.5.1
+FROM fabric8/s2i-java:latest-java11
 
 ENV JAVA_APP_JAR app.jar
 ENV AB_ENABLED off
