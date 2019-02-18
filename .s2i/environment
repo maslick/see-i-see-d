@@ -1,3 +1,2 @@
-JAVA_APP_JAR=io.maslick.cicd.App
 JAVA_APP_DIR=/deployments
 JAVA_OPTIONS=-Dport=8080
