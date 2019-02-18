@@ -23,7 +23,7 @@ $ curl http://localhost:8080
 
 ## Docker
 
-Instead of writing your own Dockerfile, you can leverage [s2i-java](https://github.com/fabric8io-images/s2i/tree/master/java/examples/binary):
+Instead of writing your own Dockerfile, you can leverage [s2i-java](https://hub.docker.com/r/fabric8/s2i-java/) builder images:
 
 1. Install s2i:
 ```
