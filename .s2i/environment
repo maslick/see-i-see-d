@@ -1,2 +1,2 @@
 JAVA_APP_DIR=/deployments
-JAVA_OPTIONS=-Dport=8080
+JAVA_OPTIONS=-Dserver.port=8080
