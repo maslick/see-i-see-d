@@ -45,3 +45,13 @@ jacocoTestReport {
 }
 
 check.dependsOn jacocoTestReport
+
+
+sonarqube {
+    properties {
+        property "sonar.projectName", "see-i-see-d"
+        property "sonar.host.url", System.getProperty("sonarHostUrl")
+        property "sonar.login", System.getProperty("sonarLogin")
+        property "sonar.password", System.getProperty("sonarPassword")
+    }
+}
