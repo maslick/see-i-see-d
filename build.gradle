@@ -25,7 +25,7 @@ apply plugin: "org.sonarqube"
 group 'io.maslick'
 version '1.0'
 
-sourceCompatibility = 11
+sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
@@ -45,13 +45,3 @@ jacocoTestReport {
 }
 
 check.dependsOn jacocoTestReport
-
-
-sonarqube {
-    properties {
-        property "sonar.projectName", "see-i-see-d"
-        property "sonar.host.url", System.getProperty("sonarHostUrl")
-        property "sonar.login", System.getProperty("sonarLogin")
-        property "sonar.password", System.getProperty("sonarPassword")
-    }
-}
