@@ -1,0 +1,75 @@
+############################################################
+START/STOP OPENSHIFT CLUSTER
+############################################################
+oc cluster up --public-hostname=shift.maslick.ru --routing-suffix=shift.maslick.ru
+oc login https://shift.maslick.ru:8443 -u developer -p dev
+open https://shift.maslick.ru:8443/console
+oc cluster down
+
+############################################################
+CI/CD
+############################################################
+# 1. create projects
+oc new-project dev --display-name="Vesna - Dev"
+oc new-project stage --display-name="Vesna - Stage"
+oc new-project cicd --display-name="CI/CD pipeline"
+
+# 2. Grant cicd project access to dev and stage
+oc policy add-role-to-group edit system:serviceaccounts:cicd -n dev
+oc policy add-role-to-group edit system:serviceaccounts:cicd -n stage
+
+# 3. Grant Jenkins Access to Projects
+oc policy add-role-to-user edit system:serviceaccount:cicd:jenkins -n dev
+oc policy add-role-to-user edit system:serviceaccount:cicd:jenkins -n stage
+
+# 4. Pre-pull docker images
+docker pull openshiftdemos/sonarqube:7.0
+docker pull sonatype/nexus3:3.13.0
+
+# 5. adjust jenkins
+oc new-app jenkins-ephemeral -n cicd
+oc set resources dc/jenkins --limits=cpu=2,memory=2Gi --requests=cpu=100m,memory=512Mi
+oc label dc jenkins app=jenkins --overwrite
+
+# 6. setup dev env
+oc import-image my-s2i-java --from docker.io/fabric8/s2i-java:latest-java11 --confirm -n ${DEV_PROJECT}
+
+# 7. dev
+oc new-build --name=vesna --image-stream=my-s2i-java:latest --binary=true -n ${DEV_PROJECT}
+oc new-app vesna:latest --allow-missing-images -n ${DEV_PROJECT}
+oc set triggers dc -l app=vesna --containers=vesna --from-image=vesna:latest --manual -n ${DEV_PROJECT}
+
+# 8. stage
+oc new-app vesna:stage --allow-missing-images -n ${STAGE_PROJECT}
+oc set triggers dc -l app=vesna --containers=vesna --from-image=vesna:stage --manual -n ${STAGE_PROJECT}
+
+# 9. dev project
+oc expose dc/vesna --port=8080 -n ${DEV_PROJECT}
+oc expose svc/vesna -n ${DEV_PROJECT}
+oc set probe dc/vesna --readiness --get-url=http://:8080/ --initial-delay-seconds=30 --failure-threshold=10 --period-seconds=10 -n ${DEV_PROJECT}
+oc set probe dc/vesna --liveness  --get-url=http://:8080/ --initial-delay-seconds=180 --failure-threshold=10 --period-seconds=10 -n ${DEV_PROJECT}
+oc rollout cancel dc/vesna -n ${DEV_PROJECT}
+
+# 10. stage project
+oc expose dc/vesna --port=8080 -n ${STAGE_PROJECT}
+oc expose svc/vesna -n ${STAGE_PROJECT}
+oc set probe dc/vesna --readiness --get-url=http://:8080/ --initial-delay-seconds=30 --failure-threshold=10 --period-seconds=10 -n ${STAGE_PROJECT}
+oc set probe dc/vesna --liveness  --get-url=http://:8080/ --initial-delay-seconds=180 --failure-threshold=10 --period-seconds=10 -n ${STAGE_PROJECT}
+oc rollout cancel dc/vesna -n ${STAGE_PROJECT}
+
+
+# 11. Sonarqube
+if [ "${EPHEMERAL}" == "true" ] ; then
+  oc new-app -f https://raw.githubusercontent.com/tahonen/sonarqube/master/sonarqube-template.yml --param=SONARQUBE_MEMORY_LIMIT=6Gi
+else
+  oc new-app -f https://raw.githubusercontent.com/tahonen/sonarqube/master/sonarqube-persistent-template.yml --param=SONARQUBE_MEMORY_LIMIT=6Gi
+fi
+
+
+# 12. Nexus
+if [ "${EPHEMERAL}" == "true" ] ; then
+  oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus3-template.yaml --param=NEXUS_VERSION=3.13.0 --param=MAX_MEMORY=2Gi
+else
+  oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus3-persistent-template.yaml --param=NEXUS_VERSION=3.13.0 --param=MAX_MEMORY=2Gi
+fi
+oc set resources dc/nexus --requests=cpu=200m,memory=1Gi --limits=cpu=2,memory=4Gi
