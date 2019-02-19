@@ -5,12 +5,14 @@ buildscript {
 
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
         classpath("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.7")
         classpath("com.netflix.nebula:nebula-publishing-plugin:9.5.0")
+        classpath("net.researchgate:gradle-release:2.8.0")
     }
 }
 
@@ -25,6 +27,7 @@ apply plugin: "org.sonarqube"
 apply plugin: 'nebula.javadoc-jar'
 apply plugin: 'nebula.source-jar'
 apply plugin: 'nebula.maven-publish'
+apply plugin: "net.researchgate.release"
 
 
 group 'io.maslick'
@@ -51,3 +54,21 @@ jacocoTestReport {
 }
 
 check.dependsOn jacocoTestReport
+
+uploadArchives {
+    def nexusUser = System.getProperty("nexusUser")
+    def nexusPassword = System.getProperty("nexusPassword")
+    def repo = System.getProperty("nexusRepo")
+    def snapshot = System.getProperty("nexusSnapshot")
+
+    repositories {
+        mavenDeployer {
+            repository(url: repo) {
+                authentication(userName: nexusUser, password: nexusPassword);
+            }
+            snapshotRepository(url: snapshot) {
+                authentication(userName: nexusUser, password: nexusPassword);
+            }
+        }
+    }
+}
