@@ -32,7 +32,7 @@ apply plugin: "net.researchgate.release"
 apply plugin: "maven"
 
 group 'io.maslick'
-version '1.0'
+version '1.0' + (Boolean.valueOf(System.getProperty("snapshot")) ? "-SNAPSHOT" : "")
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
