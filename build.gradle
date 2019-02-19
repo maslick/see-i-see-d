@@ -10,6 +10,7 @@ buildscript {
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
         classpath("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.7")
+        classpath("com.netflix.nebula:nebula-publishing-plugin:9.5.0")
     }
 }
 
@@ -20,6 +21,10 @@ apply plugin: 'io.spring.dependency-management'
 
 apply plugin: 'jacoco'
 apply plugin: "org.sonarqube"
+
+apply plugin: 'nebula.javadoc-jar'
+apply plugin: 'nebula.source-jar'
+apply plugin: 'nebula.maven-publish'
 
 
 group 'io.maslick'
