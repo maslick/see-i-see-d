@@ -27,8 +27,9 @@ apply plugin: "org.sonarqube"
 apply plugin: 'nebula.javadoc-jar'
 apply plugin: 'nebula.source-jar'
 apply plugin: 'nebula.maven-publish'
-apply plugin: "net.researchgate.release"
 
+apply plugin: "net.researchgate.release"
+apply plugin: "maven"
 
 group 'io.maslick'
 version '1.0'
