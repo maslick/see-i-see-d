@@ -47,3 +47,12 @@ docker run -d -p 8081:8080 vesna:latest
 ```
 
 More info on ``s2i`` can be found [here](https://github.com/openshift/source-to-image).
+
+
+## Openshift
+
+To deploy to openshift, run:
+```
+oc new-app fabric8/s2i-java:latest-java11~https://github.com/maslick/see-i-see-d.git --name vesna
+oc expose svc/vesna --port=8080
+```
