@@ -37,13 +37,14 @@ $ s2i build --copy . fabric8/s2i-java:latest-java11 vesna:0.1
 ```
 Or directly from the repo.
 ```
-$ s2i build https://github.com/maslick/see-i-see-d.git fabric8/s2i-java:latest-java11 vesna:latest                 // default branch
-$ s2i build https://github.com/maslick/see-i-see-d.git#springboot fabric8/s2i-java:latest-java11 vesna:spring      // springboot
+$ s2i build https://github.com/maslick/see-i-see-d.git fabric8/s2i-java:latest-java11 vesna:latest
 ```
 
 3. After this run the docker container:
 ```
-docker run -d -p 8081:8080 vesna:latest
+$ docker run -d -p 8081:8080 vesna:latest
+$ curl http://localhost:8080
+  {"hello": "Hello world"}
 ```
 
 More info on ``s2i`` can be found [here](https://github.com/openshift/source-to-image).
@@ -54,5 +55,6 @@ More info on ``s2i`` can be found [here](https://github.com/openshift/source-to-
 To deploy to openshift, run:
 ```
 oc new-app fabric8/s2i-java:latest-java11~https://github.com/maslick/see-i-see-d.git --name vesna
+oc set env dc/vesna JAVA_OPTIONS=-Dserver.port=8080
 oc expose svc/vesna --port=8080
 ```
