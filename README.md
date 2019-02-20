@@ -18,7 +18,7 @@ $ java -Dserver.port=8080 -jar build/libs/see-i-see-d-1.0.jar      // override p
 2. Fire a get request:
 ```zsh
 $ curl http://localhost:8080
-  {"hello": "Hello world"}
+  { "hello": "Hello world" }
 ```
 
 ## Docker
@@ -44,7 +44,7 @@ $ s2i build https://github.com/maslick/see-i-see-d.git fabric8/s2i-java:latest-j
 ```zsh
 $ docker run -d -p 8081:8080 vesna:latest
 $ curl http://localhost:8081
-  {"hello": "Hello world"}
+  { "hello": "Hello world" }
 ```
 
 More info on ``s2i`` can be found [here](https://github.com/openshift/source-to-image).
@@ -63,5 +63,5 @@ oc expose svc/vesna --port=8080
 And finally:
 ```zsh
 $ curl vesna-prishla.$(minishift ip).nip.io
-  {"hello": "Hello world"}
+  { "hello": "Hello world" }
 ```
