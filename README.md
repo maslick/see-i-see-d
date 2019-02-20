@@ -52,7 +52,7 @@ More info on ``s2i`` can be found [here](https://github.com/openshift/source-to-
 
 ## Openshift
 
-To deploy to openshift, run:
+To deploy to an Openshift cluster, run:
 ```zsh
 oc new-project prishla
 oc new-app fabric8/s2i-java:latest-java11~https://github.com/maslick/see-i-see-d.git --name vesna
@@ -60,7 +60,7 @@ oc set env dc/vesna JAVA_OPTIONS=-Dserver.port=8080
 oc expose svc/vesna --port=8080
 ```
 
-And finally:
+And finally (I'm using Minishift):
 ```zsh
 $ curl vesna-prishla.$(minishift ip).nip.io
   { "hello": "Hello world" }
