@@ -43,11 +43,10 @@ oc policy add-role-to-user edit system:serviceaccount:${CICD_NAMESPACE}:jenkins 
 
 # 5. Configure Sonarqube
 oc new-app -f https://raw.githubusercontent.com/tahonen/sonarqube/master/sonarqube-template.yml --param=SONARQUBE_MEMORY_LIMIT=6Gi
-#oc new-app -f https://raw.githubusercontent.com/tahonen/sonarqube/master/sonarqube-persistent-template.yml --param=SONARQUBE_MEMORY_LIMIT=6Gi
+# login to Sonarqube (admin:admin) -> Administration -> Marketplace and install Code Analyzer for Java (SonarJava 5.6)
 
 # 6. Configure Nexus
 oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus3-template.yaml --param=NEXUS_VERSION=3.13.0 --param=MAX_MEMORY=2Gi
-#oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus3-persistent-template.yaml --param=NEXUS_VERSION=3.13.0 --param=MAX_MEMORY=2Gi
 oc set resources dc/nexus --requests=cpu=200m,memory=1Gi --limits=cpu=2,memory=4Gi
 
 # 7. Deploy Gogs
@@ -57,11 +56,7 @@ oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/gogs-openshift-do
     --param=GOGS_VERSION=0.11.34 \
     --param=HOSTNAME=$GOGS_HOSTNAME \
     --param=SKIP_TLS_VERIFY=true
-#oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/gogs-openshift-docker/master/openshift/gogs-persistent-template.yaml \
-#    --param=GOGS_VERSION=0.11.34 \
-#    --param=HOSTNAME=$GOGS_HOSTNAME \
-#    --param=SKIP_TLS_VERIFY=true
-
+# Register an admin user
 
 ############################################################
 DUMMY JENKINS PIPELINE
