@@ -37,7 +37,6 @@ oc new-app jenkins-ephemeral -n ${CICD_NAMESPACE}
 oc set resources dc/jenkins --limits=cpu=2,memory=2Gi --requests=cpu=100m,memory=512Mi
 oc label dc jenkins app=jenkins --overwrite
 oc create -f jenkins-slave.yaml -n ${CICD_NAMESPACE}
-oc create -f jenkins-slave-jdk11.yaml -n ${CICD_NAMESPACE}
 
 # 4. Grant Jenkins Access to Projects
 oc policy add-role-to-user edit system:serviceaccount:${CICD_NAMESPACE}:jenkins -n ${DEV_PROJECT}
@@ -100,3 +99,10 @@ oc rollout cancel dc/vesna -n ${STAGE_PROJECT}
 
 # 4. Import pipeline
 oc new-app -f vesna-pipeline.yaml -n ${CICD_NAMESPACE}
+
+############################################################
+JDK11 Jenkins worker + OC client
+############################################################
+cd openshift
+docker build -t maslick/jdk11-jenkins-slave-oc .
+oc create -f jenkins-slave-jdk11.yaml -n ${CICD_NAMESPACE}
