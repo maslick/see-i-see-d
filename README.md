@@ -42,7 +42,7 @@ $ s2i build https://github.com/maslick/see-i-see-d.git fabric8/s2i-java:latest-j
 
 3. After this run the docker container:
 ```zsh
-$ docker run -d -p 8081:8080 vesna:latest
+$ docker run -d -p 8081:6666 -e JAVA_OPTIONS=-Dserver.port=6666 vesna:test
 $ curl http://localhost:8081
   { "hello": "Hello world" }
 ```
