@@ -32,12 +32,12 @@ $ brew install source-to-image
 
 2. Create Docker image:
 ```zsh
-$ git clone https://github.com/maslick/see-i-see-d.git
+$ git clone https://github.com/maslick/see-i-see-d.git && git checkout jdk11
 $ s2i build --copy . fabric8/s2i-java:latest-java11 vesna:0.1
 ```
 Or directly from the repo.
 ```zsh
-$ s2i build https://github.com/maslick/see-i-see-d.git fabric8/s2i-java:latest-java11 vesna:latest
+$ s2i build https://github.com/maslick/see-i-see-d.git#jdk11 fabric8/s2i-java:latest-java11 vesna:latest
 ```
 
 3. After this run the docker container:
