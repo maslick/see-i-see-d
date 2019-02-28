@@ -43,10 +43,28 @@ oc policy add-role-to-user edit system:serviceaccount:${CICD_NAMESPACE}:jenkins 
 oc policy add-role-to-user edit system:serviceaccount:${CICD_NAMESPACE}:jenkins -n ${STAGE_PROJECT}
 
 # 5. Configure Sonarqube
-oc new-app -f https://raw.githubusercontent.com/tahonen/sonarqube/master/sonarqube-template.yml --param=SONARQUBE_MEMORY_LIMIT=6Gi
-# login to Sonarqube (admin:admin) -> Administration -> Marketplace and install Code Analyzer for Java (SonarJava 5.6)
+oc new-app postgresql-persistent \
+--param POSTGRESQL_USER=sonar --param POSTGRESQL_PASSWORD=sonar --param POSTGRESQL_DATABASE=sonar --param VOLUME_CAPACITY=4Gi -lapp=sonarqube_db
+
+oc new-app docker.io/wkulhanek/sonarqube:latest \
+-e SONARQUBE_JDBC_USERNAME=sonar -e SONARQUBE_JDBC_PASSWORD=sonar -e SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar
+
+oc expose service sonarqube --port=9000
+
+echo "apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi" | oc create -f -
+oc set volume dc/sonarqube --add --overwrite --name=sonarqube-volume-1 --mount-path=/opt/sonarqube/data/ --type persistentVolumeClaim --claim-name=sonarqube-pvc
 
 # 6. Configure Nexus
+oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus3-persistent-template.yaml --param=NEXUS_VERSION=3.13.0 --param=MAX_MEMORY=2Gi
 oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus3-template.yaml --param=NEXUS_VERSION=3.13.0 --param=MAX_MEMORY=2Gi
 oc set resources dc/nexus --requests=cpu=200m,memory=1Gi --limits=cpu=2,memory=4Gi
 
