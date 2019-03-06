@@ -78,6 +78,14 @@ oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/gogs-openshift-do
 # Register an admin user
 
 ############################################################
+Add Jenkins slaves (JDK8 + JDK11) with Openshift CLI client
+############################################################
+cd openshift
+docker build -t maslick/jdk11-jenkins-slave-oc .
+oc create -f jenkins-slave-jdk11.yaml -n ${CICD_NAMESPACE}
+oc create -f jenkins-slave.yaml
+
+############################################################
 DUMMY JENKINS PIPELINE
 ############################################################
 # 1. Import pipeline
@@ -85,6 +93,14 @@ oc create -f dummy-pipeline.yaml -n ${CICD_NAMESPACE}
 
 # 2. Start dummy pipeline
 oc start-build dummy-pipeline -n ${CICD_NAMESPACE}
+
+############################################################
+SEE-I-SEE-D SOURCE STRATEGY
+############################################################
+oc new-project prishla
+oc new-app fabric8/s2i-java:latest-java11~https://github.com/maslick/see-i-see-d.git#jdk11 --name vesna
+oc set env dc/vesna JAVA_OPTIONS=-Dserver.port=8080
+oc expose svc/vesna
 
 ############################################################
 SEE-I-SEE-D JENKINS PIPELINE
@@ -101,7 +117,10 @@ oc expose dc/vesna --port=8080 -n ${DEV_PROJECT}
 oc expose svc/vesna -n ${DEV_PROJECT}
 oc set probe dc/vesna --readiness --get-url=http://:8080/ --initial-delay-seconds=30 --failure-threshold=10 --period-seconds=10 -n ${DEV_PROJECT}
 oc set probe dc/vesna --liveness  --get-url=http://:8080/ --initial-delay-seconds=180 --failure-threshold=10 --period-seconds=10 -n ${DEV_PROJECT}
+
 oc set env dc/vesna JAVA_OPTIONS=-Dserver.port=8080 -n ${DEV_PROJECT}
+
+sleep 5
 oc rollout cancel dc/vesna -n ${DEV_PROJECT}
 
 # 3. Configure Stage environment (create new build configuration, deployment, service)
@@ -112,15 +131,16 @@ oc expose dc/vesna --port=8080 -n ${STAGE_PROJECT}
 oc expose svc/vesna -n ${STAGE_PROJECT}
 oc set probe dc/vesna --readiness --get-url=http://:8080/ --initial-delay-seconds=30 --failure-threshold=10 --period-seconds=10 -n ${STAGE_PROJECT}
 oc set probe dc/vesna --liveness  --get-url=http://:8080/ --initial-delay-seconds=180 --failure-threshold=10 --period-seconds=10 -n ${STAGE_PROJECT}
+
 oc set env dc/vesna JAVA_OPTIONS=-Dserver.port=8080 -n ${STAGE_PROJECT}
+
+sleep 5
 oc rollout cancel dc/vesna -n ${STAGE_PROJECT}
 
-# 4. Import pipeline
-oc new-app -f vesna-pipeline.yaml -n ${CICD_NAMESPACE}
+# 4. Import Jenkins pipeline:
+oc create -f vesna-pipeline.yaml -n ${CICD_NAMESPACE}
+oc start-build vesna-pipeline -n ${CICD_NAMESPACE}
 
-############################################################
-JDK11 Jenkins worker + OC client
-############################################################
-cd openshift
-docker build -t maslick/jdk11-jenkins-slave-oc .
-oc create -f jenkins-slave-jdk11.yaml -n ${CICD_NAMESPACE}
+# 5. Manual promote to stage:
+oc tag dev/vesna:latest stage/vesna:stage
+oc rollout latest dc/vesna -n ${STAGE_PROJECT}

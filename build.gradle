@@ -55,20 +55,12 @@ jacocoTestReport {
 
 check.dependsOn jacocoTestReport
 
-uploadArchives {
-    def nexusUser = System.getProperty("nexusUser")
-    def nexusPassword = System.getProperty("nexusPassword")
-    def repo = System.getProperty("nexusRepo")
-    def snapshot = System.getProperty("nexusSnapshot")
-
-    repositories {
-        mavenDeployer {
-            repository(url: repo) {
-                authentication(userName: nexusUser, password: nexusPassword);
-            }
-            snapshotRepository(url: snapshot) {
-                authentication(userName: nexusUser, password: nexusPassword);
-            }
+publishing.repositories {
+    maven {
+        url project.version.endsWith('-SNAPSHOT') ? System.getProperty("nexusSnapshot") : System.getProperty("nexusRepo")
+        credentials {
+            username System.getProperty("nexusUser", "admin")
+            password System.getProperty("nexusPassword", "admin123")
         }
     }
 }

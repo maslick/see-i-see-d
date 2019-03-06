@@ -1,134 +1,128 @@
 apiVersion: v1
-kind: Template
-labels:
-  template: cicd
-  group: cicd
+kind: BuildConfig
 metadata:
   annotations:
-    iconClass: icon-jenkins
-    tags: instant-app,jenkins,nexus,cicd
-  name: cicd
-message: "Use the following credentials for login:\nJenkins: use your OpenShift credentials\nNexus: admin/admin123\nSonarQube: admin/admin\n"
-objects:
-- apiVersion: v1
-  kind: BuildConfig
-  metadata:
-    annotations:
-      pipeline.alpha.openshift.io/uses: '[{"name": "jenkins", "namespace": "", "kind": "DeploymentConfig"}]'
-    creationTimestamp: null
-    labels:
-      app: cicd-pipeline
-      name: cicd-pipeline
-    name: see-i-see-d-pipeline
-  spec:
-    triggers:
-      - github:
-          secret: secret101
-        type: GitHub
-      - generic:
-          secret: secret101
-        type: Generic
-    runPolicy: Serial
-    source:
-      type: None
-    strategy:
-      jenkinsPipelineStrategy:
-        jenkinsfile: |-
-          pipeline {
-            agent {
-              label 'maven'
+    pipeline.alpha.openshift.io/uses: '[{"name": "jenkins", "namespace": "", "kind": "DeploymentConfig"}]'
+  creationTimestamp: null
+  labels:
+    app: vesna-pipeline
+    name: vesna-pipeline
+  name: vesna-pipeline
+spec:
+  triggers:
+    - github:
+        secret: secret102
+      type: GitHub
+    - generic:
+        secret: secret102
+      type: Generic
+  runPolicy: Serial
+  source:
+    type: None
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfile: |-
+        pipeline {
+          agent {
+            label 'jdk11'
+          }
+
+          environment {
+            UZER='admin'
+            PASS='admin123'
+            REPO='http://nexus:8081/repository/maven-releases/'
+            SNAP='http://nexus:8081/repository/maven-snapshots/'
+            SONAR_USER_HOME='/tmp/.sonar'
+          }
+
+          stages {
+            stage('Git checkout') {
+              steps {
+                git branch: 'master', url: 'https://github.com/maslick/see-i-see-d.git'
+              }
             }
 
-            environment {
-              UZER='admin'
-              PASS='admin123'
-              REPO='http://nexus:8081/repository/maven-releases/'
-              SNAP='http://nexus:8081/repository/maven-snapshots/'
+            stage('Build') {
+              steps {
+                sh "./gradlew clean build -x test -Dsnapshot=true"
+              }
             }
 
-            stages {
-              stage('Checkout and build') {
-                steps {
-                  git branch: 'master', url: 'https://github.com/maslick/see-i-see-d.git'
-                  sh "./gradlew clean build -x test"
-                }
+            stage('Test') {
+              steps {
+                sh "./gradlew test"
               }
+            }
 
-              stage('Testing') {
-                steps {
-                  sh "./gradlew test"
-                }
+            stage('Code Analysis') {
+              steps {
+                sh "./gradlew sonarqube -Dsonar.host.url=http://sonarqube:9000 -Dsnapshot=true"
               }
+            }
 
-              stage('Code Analysis') {
-                steps {
-                  sh "./gradlew sonarqube -Dsonar.host.url=http://sonarqube:9000"
-                }
+            stage('Nexus snapshots') {
+              steps {
+                sh "./gradlew publishToMavenLocal -Dsnapshot=true"
+                sh "./gradlew build -x test publish -DnexusUser=$UZER -DnexusPassword=$PASS -DnexusRepo=$REPO -DnexusSnapshot=$SNAP -Dsnapshot=true"
               }
+            }
 
-              stage('Publish to Nexus') {
-                steps {
-                  sh "echo Pushing artifacts to Nexus..."
-                  sh "./gradlew publishToMavenLocal"
-                  sh "./gradlew build -x test uploadArchives -DnexusUser=$UZER -DnexusPassword=$PASS -DnexusRepo=$REPO -  =$SNAP -Dsnapshot=true"
-                }
-              }
-
-              stage('Build Docker Image') {
-                steps {
-                  sh "echo Building Docker image"
-                  sh "mkdir deployments && cp build/libs/*.jar deployments/"
-                  script {
-                    openshift.withCluster() {
-                      openshift.withProject("dev") {
-                        openshift.selector("bc", "vesna").startBuild("--from-dir=deployments/", "--follow=true", "--wait=true")
-                      }
+            stage('Build Docker Image') {
+              steps {
+                sh "mkdir deployments"
+                sh "find build/libs -name '*.jar' -and ! -name '*-javadoc.jar' -and ! -name '*-sources.jar' -exec cp {} deployments/ \\;"
+                sh "ls -l deployments/"
+                script {
+                  openshift.withCluster() {
+                    openshift.withProject("dev") {
+                      openshift.selector("bc", "vesna").startBuild("--from-dir=deployments/", "--follow=true", "--wait=true")
                     }
                   }
                 }
               }
+            }
 
-              stage('Deploy to DEV') {
-                steps {
-                  sh "echo Deploying to dev"
-                  script {
-                    openshift.withCluster() {
-                      openshift.withProject("dev") {
-                        openshift.selector("dc", "vesna").rollout().latest();
-                      }
+            stage('Deploy to DEV') {
+              steps {
+                sh "echo Deploying to dev"
+                script {
+                  openshift.withCluster() {
+                    openshift.withProject("dev") {
+                      openshift.selector("dc", "vesna").rollout().latest();
                     }
                   }
                 }
               }
+            }
 
-              stage('Promote to STAGE?') {
-                steps {
-                  timeout(time:15, unit:'MINUTES') {
-                      input message: "Promote to STAGE?", ok: "Promote"
-                  }
+            stage('Promote to STAGE?') {
+              steps {
+                timeout(time:5, unit:'MINUTES') {
+                    input message: "Promote to STAGE?", ok: "Promote"
+                }
 
-                  script {
-                    openshift.withCluster() {
-                      openshift.tag("dev/vesna:latest", "stage/vesna:stage")
-                    }
+                script {
+                  openshift.withCluster() {
+                    openshift.tag("dev/vesna:latest", "stage/vesna:stage")
                   }
                 }
               }
+            }
 
-              stage('Deploy STAGE') {
-                steps {
-                  sh "echo Deploying to STAGE"
-                  script {
-                    openshift.withCluster() {
-                      openshift.withProject("stage") {
-                        openshift.selector("dc", "vesna").rollout().latest();
-                      }
+            stage('Deploy STAGE') {
+              steps {
+                sh "echo Deploying to STAGE"
+                script {
+                  openshift.withCluster() {
+                    openshift.withProject("stage") {
+                      openshift.selector("dc", "vesna").rollout().latest();
                     }
                   }
                 }
               }
             }
           }
-      type: JenkinsPipeline
-  status:
-    lastVersion: 0
+        }
+    type: JenkinsPipeline
+status:
+  lastVersion: 0
