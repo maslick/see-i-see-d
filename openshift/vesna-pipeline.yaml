@@ -38,7 +38,7 @@ spec:
           stages {
             stage('Git checkout') {
               steps {
-                git branch: 'master', url: 'https://github.com/maslick/see-i-see-d.git'
+                git branch: 'jdk11', url: 'https://github.com/maslick/see-i-see-d.git'
               }
             }
 
