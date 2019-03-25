@@ -13,6 +13,7 @@ buildscript {
         classpath("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.7")
         classpath("com.netflix.nebula:nebula-publishing-plugin:9.5.0")
         classpath("net.researchgate:gradle-release:2.8.0")
+        classpath("com.bmuschko:gradle-docker-plugin:4.6.2")
     }
 }
 
@@ -28,6 +29,8 @@ apply plugin: 'nebula.javadoc-jar'
 apply plugin: 'nebula.source-jar'
 apply plugin: 'nebula.maven-publish'
 
+apply plugin: "com.bmuschko.docker-remote-api"
+
 apply plugin: "net.researchgate.release"
 apply plugin: "maven"
 
@@ -41,9 +44,9 @@ repositories {
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
     implementation("org.springframework.boot:spring-boot-starter-web")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("junit:junit:4.12")
 }
 
 jacocoTestReport {
@@ -63,4 +66,15 @@ publishing.repositories {
             password System.getProperty("nexusPassword", "admin123")
         }
     }
+}
+
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+task createDockerfile(type: Dockerfile) {
+    destFile = project.file('build/libs/Dockerfile')
+    from 'amazoncorretto:11'
+    instruction 'LABEL maintainer="pavel.masloff@gmail.com"'
+    exposePort 7777
+    copyFile jar.archiveName, '/app/app.jar'
+    workingDir '/app'
+    instruction 'CMD java -jar app.jar'
 }
